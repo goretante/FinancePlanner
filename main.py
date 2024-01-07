@@ -7,8 +7,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 zadatci:
 1. Unos troškova i prihoda - done
 2. Pregled financijskih statistika - done
-3. Kategorizacija transakcija - work in progress
-4. Postavljanje ciljeva
+3. Kategorizacija transakcija - done
+4. Postavljanje ciljeva - work in progress
 5. Praćenje duga
 6. Podsjetnici i planiranje
 7. Generiranje izvješća
@@ -45,11 +45,16 @@ class MainWindow:
         self.statistics_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.statistics_tab, text="Statistika")
 
+        self.goals_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.goals_tab, text="Ciljevi")
+
         self.categories = {'Troškovi': {}, 'Prihodi': {}}
+        self.goals = {}
 
         self.create_expenses_widgets()
         self.create_income_widgets()
         self.create_statisctics_widgets()
+        self.create_goals_widgets()
         
     def create_expenses_widgets(self):
         tk.Label(self.expenses_tab, text="Opis troška:").grid(row=0, column=0, padx=10, pady=10)
@@ -90,6 +95,40 @@ class MainWindow:
     def create_statisctics_widgets(self):
         tk.Button(self.statistics_tab, text="Prikaži statistiku", command=self.show_statistics).pack(pady=20)
 
+    def create_goals_widgets(self):
+        tk.Label(self.goals_tab, text="Naziv cilja:").grid(row=0, column=0, padx=10, pady=10)
+        self.goal_name_entry = tk.Entry(self.goals_tab)
+        self.goal_name_entry.grid(row=0, column=1, padx=10, pady=10)
+
+        tk.Label(self.goals_tab, text="Iznos cilja:").grid(row=1, column=0, padx=10, pady=10)
+        self.goal_amount_entry = tk.Entry(self.goals_tab)
+        self.goal_amount_entry.grid(row=1, column=1, padx=10, pady=10)
+
+        tk.Button(self.goals_tab, text="Dodaj cilj", command=self.add_goal).grid(row=2, column=0, columnspan=2, pady=10)
+
+        self.goals_listbox = tk.Listbox(self.goals_tab, width=50, height=10)
+        self.goals_listbox.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+
+    def add_goal(self):
+        name = self.goal_name_entry.get()
+        amount = self.goal_amount_entry.get()
+
+        if name and amount:
+            goal_entry = f"{name}: {amount}€"
+
+            for i in range(self.goals_listbox.size()):
+                if name in self.goals_listbox.get(i):
+                    self.goals_listbox.delete(i)
+                    break
+            
+            self.goals_listbox.insert(tk.END, goal_entry)
+
+            self.goals[name] = float(amount)
+
+            self.goal_name_entry.delete(0, tk.END)
+            self.goal_amount_entry.delete(0, tk.END)
+
+
     def add_expense(self):
         description = self.expenses_description_entry.get()
         amount = self.expenses_amount_entry.get()
@@ -127,6 +166,12 @@ class MainWindow:
 
     def show_statistics(self):
         self.plot_category_statistics()
+
+    def add_goal_category(self):
+        category = tk.simpledialog.askstring("Dodaj kategoriju ciljeva", "Unesite naziv nove kategorije ciljeva:")
+        if category:
+            self.goals[category] = 0
+            self.goals_listbox.insert(tk.END, category)
 
     def plot_category_statistics(self):
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
