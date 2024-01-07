@@ -1,8 +1,9 @@
 import tkinter as tk
-from tkinter import Menu, messagebox, ttk, filedialog
+from tkinter import Menu, messagebox, ttk, filedialog, simpledialog
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import json
+import requests
 
 '''
 zadatci:
@@ -15,8 +16,39 @@ zadatci:
 7. Generiranje izvješća
 8. Sigurnosne značajke (možda implementiram)
 9. Uvoz/izvoz podataka - done
-10. Valutni pretvarač
+10. Valutni pretvarač - done
 '''
+
+class CurrencyConverter:
+    def __init__(self):
+        self.api_url = "https://open.er-api.com/v6/latest"
+
+    def get_exchange_rates(self):
+        try:
+            response = requests.get(self.api_url)
+            data = response.json()
+            return data.get("rates", {})
+        except Exception as e:
+            print(f"Greška u dohvaćanju valuta: {e}")
+            return {}
+
+    def convert_currency(self, amount, from_currency, to_currency):
+        exchange_rates = self.get_exchange_rates()
+
+        if not exchange_rates:
+            return None
+        
+        if from_currency.upper() not in exchange_rates or to_currency.upper() not in exchange_rates:
+            print("Pogrešna oznaka valute.")
+            return None
+        
+        rate_from = exchange_rates[from_currency.upper()]
+        rate_to = exchange_rates[to_currency.upper()]
+
+        converted_amount = amount * (rate_to / rate_from)
+        return converted_amount
+
+converter = CurrencyConverter()
 
 class MainWindow:
     def __init__(self, master):
@@ -52,6 +84,9 @@ class MainWindow:
         self.goals_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.goals_tab, text="Ciljevi")
 
+        self.currency_converter_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.currency_converter_tab, text="Valutni pretvarač")
+
         self.categories = {'Troškovi': {}, 'Prihodi': {}}
         self.goals = {}
 
@@ -59,6 +94,7 @@ class MainWindow:
         self.create_income_widgets()
         self.create_statisctics_widgets()
         self.create_goals_widgets()
+        self.create_currency_converter_widgets()
         
     def create_expenses_widgets(self):
         tk.Label(self.expenses_tab, text="Opis troška:").grid(row=0, column=0, padx=10, pady=10)
@@ -112,6 +148,42 @@ class MainWindow:
 
         self.goals_listbox = tk.Listbox(self.goals_tab, width=50, height=10)
         self.goals_listbox.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+
+    def create_currency_converter_widgets(self):
+        tk.Label(self.currency_converter_tab, text="Iznos:").grid(row=0, column=0, padx=10, pady=10)
+        self.currency_amount_entry = tk.Entry(self.currency_converter_tab)
+        self.currency_amount_entry.grid(row=0, column=1, padx=10, pady=10)
+
+        tk.Label(self.currency_converter_tab, text="Od valute (kȏd):").grid(row=1, column=0, padx=10, pady=10)
+        self.from_currency_entry = tk.Entry(self.currency_converter_tab)
+        self.from_currency_entry.grid(row=1, column=1, padx=10, pady=10)
+
+        tk.Label(self.currency_converter_tab, text="U valutu (kȏd):").grid(row=2, column=0, padx=10, pady=10)
+        self.to_currency_entry = tk.Entry(self.currency_converter_tab)
+        self.to_currency_entry.grid(row=2, column=1, padx=10, pady=10)
+
+        tk.Button(self.currency_converter_tab, text="Pretvori", command=self.convert_currency).grid(row=3, column=0, columnspan=2, pady=10)
+
+        self.converted_result_label = tk.Label(self.currency_converter_tab, text="")
+        self.converted_result_label.grid(row=4, column=0, columnspan=2, pady=10)
+
+    def convert_currency(self):
+        amount_str = self.currency_amount_entry.get()
+        from_currency = self.from_currency_entry.get()
+        to_currency = self.to_currency_entry.get()
+
+        try:
+            amount = float(amount_str)
+        except ValueError:
+            messagebox.showwarning("Upozorenje", "Unesite ispravan iznos (samo brojevi!).")
+
+        converted_amount = converter.convert_currency(amount, from_currency, to_currency)
+
+        if converted_amount is not None:
+            result_text = f"{amount:.2f} {from_currency} = {converted_amount:.2f} {to_currency}"
+            self.converted_result_label.config(text=result_text)
+        else:
+            messagebox.showwarning("Upozorenje", "Pretvorba nije uspjela!")        
 
     def add_goal(self):
         name = self.goal_name_entry.get()
@@ -292,6 +364,7 @@ class MainWindow:
         for goal, amount in self.goals.items():
             entry = f"{goal}: {amount}€"
             self.goals_listbox.insert(tk.END, entry)
+
 
 def main(): 
     root = tk.Tk()
