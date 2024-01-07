@@ -14,7 +14,7 @@ zadatci:
 6. Podsjetnici i planiranje
 7. Generiranje izvješća
 8. Sigurnosne značajke (možda implementiram)
-9. Uvoz/izvoz podataka
+9. Uvoz/izvoz podataka - done
 10. Valutni pretvarač
 '''
 
