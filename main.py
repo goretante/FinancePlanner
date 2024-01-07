@@ -1,14 +1,15 @@
 import tkinter as tk
-from tkinter import Menu, messagebox, ttk
+from tkinter import Menu, messagebox, ttk, filedialog
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import json
 
 '''
 zadatci:
 1. Unos troškova i prihoda - done
 2. Pregled financijskih statistika - done
 3. Kategorizacija transakcija - done
-4. Postavljanje ciljeva - work in progress
+4. Postavljanje ciljeva - done
 5. Praćenje duga
 6. Podsjetnici i planiranje
 7. Generiranje izvješća
@@ -29,6 +30,9 @@ class MainWindow:
         
         self.file_menu = Menu(self.menu_bar, tearoff=0)
         self.file_menu.add_command(label="Novi")
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Uvezi podatke", command=self.import_data)
+        self.file_menu.add_command(label="Izvezi podatke", command=self.export_data)
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Izlaz", command=self.exit_program)
         self.menu_bar.add_cascade(label="Datoteka", menu=self.file_menu)
@@ -128,7 +132,6 @@ class MainWindow:
             self.goal_name_entry.delete(0, tk.END)
             self.goal_amount_entry.delete(0, tk.END)
 
-
     def add_expense(self):
         description = self.expenses_description_entry.get()
         amount = self.expenses_amount_entry.get()
@@ -138,10 +141,10 @@ class MainWindow:
             self.expenses_listbox.insert(tk.END, expense_entry)
 
             if category in self.categories['Troškovi']:
-                self.categories['Troškovi'][category].append(float(amount))
+                self.categories['Troškovi'][category].append({'description': description, 'amount': float(amount)})
             else:
-                self.categories['Troškovi'][category] = [float(amount)]
-            
+                self.categories['Troškovi'][category] = [{'description': description, 'amount': float(amount)}]
+
             self.expenses_description_entry.delete(0, tk.END)
             self.expenses_amount_entry.delete(0, tk.END)
             self.expenses_category_entry.delete(0, tk.END)
@@ -155,10 +158,9 @@ class MainWindow:
             self.income_listbox.insert(tk.END, income_entry)
 
             if category in self.categories['Prihodi']:
-                self.categories['Prihodi'][category].append(float(amount))
+                self.categories['Prihodi'][category].append({'description': description, 'amount': float(amount)})
             else:
-                self.categories['Prihodi'][category] = [float(amount)]
-
+                self.categories['Prihodi'][category] = [{'description': description, 'amount': float(amount)}]
 
             self.income_description_entry.delete(0, tk.END)
             self.income_amount_entry.delete(0, tk.END)
@@ -213,6 +215,83 @@ class MainWindow:
     def exit_program(self):
         if messagebox.askyesno("Izlaz", "Jeste li sigurni da želite izaći?"):
             self.master.destroy()
+
+    def import_data(self):
+        try:
+            file_path = filedialog.askopenfilename(title="Odaberi datoteku", filetypes=[("JSON files", "*.json")])
+            if file_path:
+                with open(file_path, "r") as file:
+                    data = json.load(file)
+            
+            # uvoz troškova
+            imported_categories_expenses = data.get("categories", {}).get("Troškovi", {})
+            for category, amounts in imported_categories_expenses.items():
+                if category in self.categories['Troškovi']:
+                    self.categories['Troškovi'][category].extend(amounts)
+                else:
+                    self.categories['Troškovi'][category] = amounts
+
+            # uvoz prihoda
+            imported_categories_income = data.get("categories", {}).get("Prihodi", {})
+            for category, amounts in imported_categories_income.items():
+                if category in self.categories['Prihodi']:
+                    self.categories['Prihodi'][category].extend(amounts)
+                else:
+                    self.categories['Prihodi'][category] = amounts
+            
+            # uvoz ciljeva
+            imported_goals = data.get("goals", {})
+            for goal, amount in imported_goals.items():
+                if goal in self.goals:
+                    self.goals[goal] += amount
+                else:
+                    self.goals[goal] = amount
+
+            self.update_interface()
+
+            messagebox.showinfo("Uvoz podataka", "Podatci su uspješno uvezeni.")
+
+        except FileNotFoundError:
+            messagebox.showwarning("Upozorenje", "Datoteka s podatcima nije pronađena.")
+        except json.JSONDecodeError:
+            messagebox.showerror("Greška", "Pogreška prilikom dekodiranja JSON formata.")
+        except Exception as e:
+            messagebox.showerror("Greška", f"Neočekivana greška prilikom uvoza podataka: {str(e)}")
+
+    def export_data(self):
+        try:
+            file_path = filedialog.asksaveasfilename(title="Spremi datoteku", filetypes=[("JSON files", "*.json")])
+            if file_path:
+                data_to_export = {
+                    "categories": self.categories,
+                    "goals": self.goals
+                }
+            
+            with open(file_path, "w") as file:
+                json.dump(data_to_export, file, indent=2)
+
+            messagebox.showinfo("Izvoz podataka", "Podatci su uspješno izvezeni.")
+
+        except Exception as e:
+            messagebox.showerror("Greška", f"Neočekivana greška prilikom izvoza podataka: {str(e)}")
+
+    def update_interface(self):
+        self.expenses_listbox.delete(0, tk.END)
+        for category, transactions in self.categories['Troškovi'].items():
+            for transaction in transactions:
+                entry = f"{category}: {transaction['description']} - {transaction['amount']}€"
+                self.expenses_listbox.insert(tk.END, entry)
+
+        self.income_listbox.delete(0, tk.END)
+        for category, transactions in self.categories['Prihodi'].items():
+            for transaction in transactions:
+                entry = f"{category}: {transaction['description']} - {transaction['amount']}€"
+                self.income_listbox.insert(tk.END, entry)
+
+        self.goals_listbox.delete(0, tk.END)
+        for goal, amount in self.goals.items():
+            entry = f"{goal}: {amount}€"
+            self.goals_listbox.insert(tk.END, entry)
 
 def main(): 
     root = tk.Tk()

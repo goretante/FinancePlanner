@@ -1,0 +1,23 @@
+{
+  "categories": {
+    "Tro\u0161kovi": {
+      "namirnice": [
+        {
+          "description": "mlijeko, jaja, kruh",
+          "amount": 15.32
+        }
+      ]
+    },
+    "Prihodi": {
+      "pla\u0107a": [
+        {
+          "description": "14.2.2024.",
+          "amount": 2132.56
+        }
+      ]
+    }
+  },
+  "goals": {
+    "automobil": 5300.0
+  }
+}
