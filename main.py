@@ -45,6 +45,7 @@ class MainWindow:
         self.statistics_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.statistics_tab, text="Statistika")
 
+        self.categories = {'Troškovi': {}, 'Prihodi': {}}
 
         self.create_expenses_widgets()
         self.create_income_widgets()
@@ -59,10 +60,14 @@ class MainWindow:
         self.expenses_amount_entry = tk.Entry(self.expenses_tab)
         self.expenses_amount_entry.grid(row=1, column=1, padx=10, pady=10)
 
-        tk.Button(self.expenses_tab, text="Dodaj Trošak", command=self.add_expense).grid(row=2, column=0, columnspan=2, pady=10)
+        tk.Label(self.expenses_tab, text="Kategorija troška:").grid(row=2, column=0, padx=10, pady=10)
+        self.expenses_category_entry = tk.Entry(self.expenses_tab)
+        self.expenses_category_entry.grid(row=2, column=1, padx=10, pady=10)
+
+        tk.Button(self.expenses_tab, text="Dodaj Trošak", command=self.add_expense).grid(row=3, column=0, columnspan=2, pady=10)
 
         self.expenses_listbox = tk.Listbox(self.expenses_tab, width=50, height=10)
-        self.expenses_listbox.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+        self.expenses_listbox.grid(row=4, column=0, columnspan=2, padx=10, pady=10)
 
     def create_income_widgets(self):
         tk.Label(self.income_tab, text="Opis prihoda:").grid(row=0, column=0, padx=10, pady=10)
@@ -73,10 +78,14 @@ class MainWindow:
         self.income_amount_entry = tk.Entry(self.income_tab)
         self.income_amount_entry.grid(row=1, column=1, padx=10, pady=10)
 
-        tk.Button(self.income_tab, text="Dodaj Prihod", command=self.add_income).grid(row=2, column=0, columnspan=2, pady=10)
+        tk.Label(self.income_tab, text="Kategorija prihoda:").grid(row=2, column=0, padx=10, pady=10)
+        self.income_category_entry = tk.Entry(self.income_tab)
+        self.income_category_entry.grid(row=2, column=1, padx=10, pady=10)
+
+        tk.Button(self.income_tab, text="Dodaj Prihod", command=self.add_income).grid(row=3, column=0, columnspan=2, pady=10)
 
         self.income_listbox = tk.Listbox(self.income_tab, width=50, height=10)
-        self.income_listbox.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+        self.income_listbox.grid(row=4, column=0, columnspan=2, padx=10, pady=10)
 
     def create_statisctics_widgets(self):
         tk.Button(self.statistics_tab, text="Prikaži statistiku", command=self.show_statistics).pack(pady=20)
@@ -84,33 +93,48 @@ class MainWindow:
     def add_expense(self):
         description = self.expenses_description_entry.get()
         amount = self.expenses_amount_entry.get()
+        category = self.expenses_category_entry.get()
         if description and amount:
-            expense_entry = f"{description}: {amount}"
+            expense_entry = f"{category}: {description} - {amount}€"
             self.expenses_listbox.insert(tk.END, expense_entry)
+
+            if category in self.categories['Troškovi']:
+                self.categories['Troškovi'][category].append(float(amount))
+            else:
+                self.categories['Troškovi'][category] = [float(amount)]
+            
             self.expenses_description_entry.delete(0, tk.END)
             self.expenses_amount_entry.delete(0, tk.END)
+            self.expenses_category_entry.delete(0, tk.END)
 
     def add_income(self):
         description = self.income_description_entry.get()
         amount = self.income_amount_entry.get()
+        category = self.income_category_entry.get()
         if description and amount:
-            income_entry = f"{description}: {amount}"
+            income_entry = f"{category}: {description} - {amount}€"
             self.income_listbox.insert(tk.END, income_entry)
+
+            if category in self.categories['Prihodi']:
+                self.categories['Prihodi'][category].append(float(amount))
+            else:
+                self.categories['Prihodi'][category] = [float(amount)]
+
+
             self.income_description_entry.delete(0, tk.END)
             self.income_amount_entry.delete(0, tk.END)
+            self.income_category_entry.delete(0, tk.END)
 
     def show_statistics(self):
-        expenses = self.get_entries_from_listbox(self.expenses_listbox)
-        income = self.get_entries_from_listbox(self.income_listbox)
+        self.plot_category_statistics()
 
-        if not expenses and not income:
-            messagebox.showinfo("Statistika", "Nema dovoljno podataka za prikaz statistike.")
-            return
-        
-        categories = ['Troškovi', 'Prihodi']
-        values = [sum(self.extract_amount(entry) for entry in expenses), sum(self.extract_amount(entry) for entry in income)]
+    def plot_category_statistics(self):
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
 
-        self.plot_bar_chart(categories, values)
+        self.plot_bar_chart(ax1, 'Troškovi', self.categories['Troškovi'])
+        self.plot_bar_chart(ax2, 'Prihodi', self.categories['Prihodi'])
+
+        plt.show()
 
     def get_entries_from_listbox(self, listbox):
         return listbox.get(0, tk.END)
@@ -121,11 +145,14 @@ class MainWindow:
         except ValueError:
             return 0.0
 
-    def plot_bar_chart(self, categories, values):
-        fig, ax = plt.subplots()
-        bars = ax.bar(categories, values, color=['red', 'green'])
+    def plot_bar_chart(self, ax, title, categories):
+        category_names = list(categories.keys())
+        values = [sum(categories[category]) for category in category_names]
+
+        bars = ax.bar(category_names, values, color='blue')
+
         ax.set_ylabel('Iznos')
-        ax.set_title('Grafikon troškova i prihoda')
+        ax.set_title(f'Grafikon {title}')
 
         for bar, value in zip(bars, values):
             height = bar.get_height()
@@ -134,9 +161,6 @@ class MainWindow:
                         xytext=(0, 3),
                         textcoords="offset points",
                         ha='center', va='bottom')
-            
-
-        plt.show()
 
     def new_file(self):
         messagebox.showinfo("Info", "Otvorena je nova datoteka")
