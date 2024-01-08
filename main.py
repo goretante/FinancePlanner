@@ -309,7 +309,7 @@ class MainWindow:
         bars = ax.bar(category_names, values, color='blue')
 
         ax.set_ylabel('Iznos')
-        ax.set_title(f'Grafikon {title}')
+        ax.set_title(f'Grafikon {title.lower()}')
 
         for bar, value in zip(bars, values):
             height = bar.get_height()
