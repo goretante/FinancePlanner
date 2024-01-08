@@ -62,7 +62,7 @@ class MainWindow:
         self.master.config(menu=self.menu_bar)
         
         self.file_menu = Menu(self.menu_bar, tearoff=0)
-        self.file_menu.add_command(label="Novi")
+        self.file_menu.add_command(label="Novi", command=self.new_file)
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Uvezi podatke", command=self.import_data)
         self.file_menu.add_command(label="Izvezi podatke", command=self.export_data)
