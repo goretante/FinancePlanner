@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import json
 import requests
+from datetime import datetime
 
 '''
 zadatci:
@@ -13,7 +14,7 @@ zadatci:
 4. Postavljanje ciljeva - done
 5. Praćenje duga
 6. Podsjetnici i planiranje
-7. Generiranje izvješća
+7. Generiranje izvješća - done
 8. Sigurnosne značajke (možda implementiram)
 9. Uvoz/izvoz podataka - done
 10. Valutni pretvarač - done
@@ -65,6 +66,8 @@ class MainWindow:
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Uvezi podatke", command=self.import_data)
         self.file_menu.add_command(label="Izvezi podatke", command=self.export_data)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Generiraj izvješće", command=self.generate_report)
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Izlaz", command=self.exit_program)
         self.menu_bar.add_cascade(label="Datoteka", menu=self.file_menu)
@@ -365,6 +368,36 @@ class MainWindow:
             entry = f"{goal}: {amount}€"
             self.goals_listbox.insert(tk.END, entry)
 
+    def generate_report(self):
+
+        file_path = filedialog.asksaveasfilename(title="Spremi izvješće", defaultextension=".txt", filetypes=[("Text files", "*.txt")])
+
+        if file_path:
+            try:
+                with open(file_path, "w") as file:
+                    file.write(f"Izvješće - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+
+                    file.write("Troškovi:\n")
+                    for category, expenses in self.categories['Troškovi'].items():
+                        for expense in expenses:
+                            file.write(f"{category}: {expense['description']} - {expense['amount']}€\n")
+
+                    file.write("\n")
+
+                    file.write("Prihodi:\n")
+                    for category, incomes in self.categories['Prihodi'].items():
+                        for income in incomes:
+                            file.write(f"{category}: {income['description']} - {income['amount']}€\n")
+
+                    file.write("\n")
+
+                    file.write("Ciljevi:\n")
+                    for goal, amount in self.goals.items():
+                        file.write(f"{goal}: {amount}€\n")
+
+                messagebox.showinfo("Generiraj izvješće", "Izvješće je uspješno generirano.")
+            except Exception as e:
+                messagebox.showerror("Greška", f"Neočekivana greška prilikom generacije izvješća: {str(e)}")
 
 def main(): 
     root = tk.Tk()
