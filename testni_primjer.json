@@ -19,5 +19,11 @@
   },
   "goals": {
     "automobil": 5300.0
-  }
+  },
+  "debts": [
+    {
+      "description": "kredit",
+      "amount": 130569.11
+    }
+  ]
 }

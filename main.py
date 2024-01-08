@@ -12,7 +12,7 @@ zadatci:
 2. Pregled financijskih statistika - done
 3. Kategorizacija transakcija - done
 4. Postavljanje ciljeva - done
-5. Praćenje duga
+5. Praćenje duga - done
 6. Podsjetnici i planiranje
 7. Generiranje izvješća - done
 8. Sigurnosne značajke (možda implementiram)
@@ -87,16 +87,21 @@ class MainWindow:
         self.goals_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.goals_tab, text="Ciljevi")
 
+        self.debts_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.debts_tab, text="Dugovi")
+
         self.currency_converter_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.currency_converter_tab, text="Valutni pretvarač")
 
         self.categories = {'Troškovi': {}, 'Prihodi': {}}
         self.goals = {}
+        self.debts = []
 
         self.create_expenses_widgets()
         self.create_income_widgets()
         self.create_statisctics_widgets()
         self.create_goals_widgets()
+        self.create_debt_widgets()
         self.create_currency_converter_widgets()
         
     def create_expenses_widgets(self):
@@ -151,6 +156,31 @@ class MainWindow:
 
         self.goals_listbox = tk.Listbox(self.goals_tab, width=50, height=10)
         self.goals_listbox.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+
+    def create_debt_widgets(self):
+        tk.Label(self.debts_tab, text="Opis duga:").grid(row=0, column=0, padx=10, pady=10)
+        self.debt_description_entry = tk.Entry(self.debts_tab)
+        self.debt_description_entry.grid(row=0, column=1, padx=10, pady=10)
+
+        tk.Label(self.debts_tab, text="Ukupan iznos duga:").grid(row=1, column=0, padx=10, pady=10)
+        self.debt_amount_entry = tk.Entry(self.debts_tab)
+        self.debt_amount_entry.grid(row=1, column=1, padx=10, pady=10)
+
+        tk.Button(self.debts_tab, text="Dodaj dug", command=self.add_debt).grid(row=2, column=0, columnspan=2, pady=10)
+
+        tk.Label(self.debts_tab, text="Indeks duga:").grid(row=3, column=0, padx=10, pady=10)
+        self.debt_index_entry = tk.Entry(self.debts_tab)
+        self.debt_index_entry.grid(row=3, column=1, padx=10, pady=10)
+
+        tk.Label(self.debts_tab, text="Iznos smanjenja:").grid(row=4, column=0, padx=10, pady=10)
+        self.debt_reduction_amount_entry = tk.Entry(self.debts_tab)
+        self.debt_reduction_amount_entry.grid(row=4, column=1, padx=10, pady=10)
+
+        tk.Button(self.debts_tab, text="Smanji dug", command=self.reduce_debt).grid(row=5, column=0, columnspan=2, pady=10)
+
+        self.debt_listbox = tk.Listbox(self.debts_tab, width=50, height=10)
+        self.debt_listbox.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
+
 
     def create_currency_converter_widgets(self):
         tk.Label(self.currency_converter_tab, text="Iznos:").grid(row=0, column=0, padx=10, pady=10)
@@ -269,7 +299,8 @@ class MainWindow:
 
     def plot_bar_chart(self, ax, title, categories):
         category_names = list(categories.keys())
-        values = [sum(categories[category]) for category in category_names]
+
+        values = [sum(transaction['amount'] for transaction in categories[category]) for category in category_names]
 
         bars = ax.bar(category_names, values, color='blue')
 
@@ -322,6 +353,10 @@ class MainWindow:
                 else:
                     self.goals[goal] = amount
 
+            # uvoz dugova
+            imported_debts = data.get("debts", [])
+            self.debts = imported_debts
+
             self.update_interface()
 
             messagebox.showinfo("Uvoz podataka", "Podatci su uspješno uvezeni.")
@@ -339,7 +374,8 @@ class MainWindow:
             if file_path:
                 data_to_export = {
                     "categories": self.categories,
-                    "goals": self.goals
+                    "goals": self.goals,
+                    "debts": self.debts
                 }
             
             with open(file_path, "w") as file:
@@ -368,6 +404,11 @@ class MainWindow:
             entry = f"{goal}: {amount}€"
             self.goals_listbox.insert(tk.END, entry)
 
+        self.debt_listbox.delete(0, tk.END)
+        for debt in self.debts:
+            entry = f"{debt['description']} - {debt['amount']}€"
+            self.debt_listbox.insert(tk.END, entry)
+
     def generate_report(self):
 
         file_path = filedialog.asksaveasfilename(title="Spremi izvješće", defaultextension=".txt", filetypes=[("Text files", "*.txt")])
@@ -395,12 +436,52 @@ class MainWindow:
                     for goal, amount in self.goals.items():
                         file.write(f"{goal}: {amount}€\n")
 
+                    file.write("\n")
+
+                    file.write("Dugovi:\n")
+                    for debt in self.debts:
+                        file.write(f"{debt['description']} - {debt['amount']}€\n")
+
                 messagebox.showinfo("Generiraj izvješće", "Izvješće je uspješno generirano.")
             except Exception as e:
                 messagebox.showerror("Greška", f"Neočekivana greška prilikom generacije izvješća: {str(e)}")
 
+    def add_debt(self):
+        description = self.debt_description_entry.get()
+        total_amount = self.debt_amount_entry.get()
+
+        if description and total_amount:
+            debt_entry = f"{description} - {total_amount}€"
+            self.debt_listbox.insert(tk.END, debt_entry)
+
+            debt = {'description': description, 'amount': float(total_amount)}
+            self.debts.append(debt)
+
+            self.debt_description_entry.delete(0, tk.END)
+            self.debt_amount_entry.delete(0, tk.END)
+
+    def reduce_debt(self):
+        try:
+            index = int(self.debt_index_entry.get())
+            if 0 <= index < len(self.debts):
+                amount_str = self.debt_reduction_amount_entry.get()
+                try:
+                    reduction_amount = float(amount_str)
+                    if 0 < reduction_amount <= self.debts[index]['amount']:
+                        self.debts[index]['amount'] -= reduction_amount
+                        self.update_interface()
+                    else:
+                        messagebox.showwarning("Upozorenje", "Unesite ispravan iznos smanjnja duga.")
+                except ValueError:
+                    messagebox.showwarning("Upozorenje", "Unesite ispravan iznos smanjenja duga (unose se samo brojevi!).")
+            else:
+                messagebox.showwarning("Upozorenje", "Unesite ispravan index duga koji želite smanjiti.")
+        except ValueError:
+            messagebox.showwarning("Upozorenje", "Unesite ispravan index duga koji želite smanjiti (samo cijeli broj!).")
+
 def main(): 
     root = tk.Tk()
+    root.iconbitmap('fp_logo.ico')
     app = MainWindow(root)
     root.mainloop()
 
