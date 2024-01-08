@@ -6,6 +6,16 @@
           "description": "mlijeko, jaja, kruh",
           "amount": 15.32
         }
+      ],
+      "ra\u010duni": [
+        {
+          "description": "struja",
+          "amount": 23.55
+        },
+        {
+          "description": "voda",
+          "amount": 13.55
+        }
       ]
     },
     "Prihodi": {
@@ -13,6 +23,12 @@
         {
           "description": "14.2.2024.",
           "amount": 2132.56
+        }
+      ],
+      "obrt": [
+        {
+          "description": "13.5.2024.",
+          "amount": 140.0
         }
       ]
     }
