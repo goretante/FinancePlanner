@@ -13,9 +13,9 @@ zadatci:
 3. Kategorizacija transakcija - done
 4. Postavljanje ciljeva - done
 5. Praćenje duga - done
-6. Podsjetnici i planiranje
+6. Podsjetnici i planiranje - nepotrebno
 7. Generiranje izvješća - done
-8. Sigurnosne značajke (možda implementiram)
+8. Sigurnosne značajke (možda implementiram) - nepotrebno
 9. Uvoz/izvoz podataka - done
 10. Valutni pretvarač - done
 '''
