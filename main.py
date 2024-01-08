@@ -72,6 +72,10 @@ class MainWindow:
         self.file_menu.add_command(label="Izlaz", command=self.exit_program)
         self.menu_bar.add_cascade(label="Datoteka", menu=self.file_menu)
 
+        self.help_menu = Menu(self.menu_bar, tearoff=0)
+        self.help_menu.add_command(label="Pomoć", command=self.show_help)
+        self.menu_bar.add_cascade(label="Pomoć", menu=self.help_menu)
+
         self.tabControl = ttk.Notebook(self.frame)
         self.tabControl.pack(expand=1, fill="both")
 
@@ -316,7 +320,14 @@ class MainWindow:
                         ha='center', va='bottom')
 
     def new_file(self):
-        messagebox.showinfo("Info", "Otvorena je nova datoteka")
+        if messagebox.askyesno("Nova datoteka", "Jeste li sigurni da želite započeti novu datoteku?"):
+            self.categories = {'Troškovi': {}, 'Prihodi': {}}
+            self.goals = {}
+            self.debts = []
+
+            self.update_interface()
+
+            messagebox.showinfo("Nova datoteka", "Nova datoteka je uspješno otvorena.")
         
     def exit_program(self):
         if messagebox.askyesno("Izlaz", "Jeste li sigurni da želite izaći?"):
@@ -478,6 +489,9 @@ class MainWindow:
                 messagebox.showwarning("Upozorenje", "Unesite ispravan index duga koji želite smanjiti.")
         except ValueError:
             messagebox.showwarning("Upozorenje", "Unesite ispravan index duga koji želite smanjiti (samo cijeli broj!).")
+
+    def show_help(self):
+        messagebox.showinfo("Pomoć", "")
 
 def main(): 
     root = tk.Tk()
